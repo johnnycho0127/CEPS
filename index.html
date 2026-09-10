@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USA COEPS - Interactive Coursework Knowledge Map</title>
+    <!-- Vis.js Network CDN -->
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121826;
+            color: #ffffff;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #sidebar {
+            width: 320px;
+            background-color: #1a2332;
+            border-right: 1px solid #2d3748;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 10;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+        }
+        h1 {
+            font-size: 1.2rem;
+            color: #63b3ed;
+            margin-bottom: 5px;
+        }
+        p.subtitle {
+            font-size: 0.8rem;
+            color: #a0aec0;
+            margin-bottom: 10px;
+        }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        label {
+            font-size: 0.85rem;
+            color: #cbd5e0;
+            font-weight: 600;
+        }
+        select, input {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #4a5568;
+            background-color: #2d3748;
+            color: #fff;
+            font-size: 0.9rem;
+            outline: none;
+        }
+        select:focus, input:focus {
+            border-color: #63b3ed;
+        }
+        #info-panel {
+            margin-top: auto;
+            padding: 15px;
+            background-color: #2d3748;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            min-height: 120px;
+        }
+        #info-panel h3 {
+            color: #48bb78;
+            margin-bottom: 5px;
+        }
+        #mynetwork {
+            flex-1;
+            width: 100%;
+            height: 100vh;
+            background-color: #0f172a;
+        }
+        .legend {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 0.8rem;
+            background: #2d3748;
+            padding: 10px;
+            border-radius: 6px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .color-box {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <div>
+            <h1>학과 코스워크 지식 지도</h1>
+            <p class="subtitle">University of South Alabama - COEPS</p>
+        </div>
+
+        <div class="filter-group">
+            <label for="program-filter">프로그램 / 전공 필터</label>
+            <select id="program-filter" onchange="filterMap()">
+                <option value="ALL">전체 보기 (All Programs)</option>
+                <option value="HPI">HPI Certificate</option>
+                <option value="IDD_CERT">IDD Certificate</option>
+                <option value="IDD_MS">IDD M.S.</option>
+                <option value="IDD_PHD">IDD Ph.D.</option>
+                <option value="EDM_MS">Educational Media M.S.</option>
+                <option value="LIB_MED">Library Media Certificate/M.Ed.</option>
+                <option value="COUNSELING">Counseling (CMHC & School)</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label for="search-input">과목 검색 (코드/과목명)</label>
+            <input type="text" id="search-input" placeholder="예: ISD 621, Research..." oninput="searchNode()">
+        </div>
+
+        <div class="legend">
+            <label>범례 (Legend)</label>
+            <div class="legend-item"><div class="color-box" style="background:#3182ce;"></div> ISD (Instructional Design)</div>
+            <div class="legend-item"><div class="color-box" style="background:#dd6b20;"></div> IDE / EPY (Research & Psych)</div>
+            <div class="legend-item"><div class="color-box" style="background:#38a169;"></div> EDM / SPE / EDU (Media & Edu)</div>
+            <div class="legend-item"><div class="color-box" style="background:#805ad5;"></div> CED (Counseling)</div>
+        </div>
+
+        <div id="info-panel">
+            <h3>노드 정보</h3>
+            <p id="info-content">노드를 클릭하면 해당 과목의 상세 설명과 속한 학위 프로그램 정보가 표시됩니다.</p>
+        </div>
+    </div>
+
+    <div id="mynetwork"></div>
+
+    <script type="text/javascript">
+        // 1. Data Definitions (Extracted from uploaded PDFs)
+        const rawNodes = [
+            // ISD
+            { id: 'ISD 581', label: 'ISD 581\nHypermedia Tools', group: 'ISD', programs: ['IDD_MS', 'EDM_MS'] },
+            { id: 'ISD 610', label: 'ISD 610\nTrends & Issues in IDD', group: 'ISD', programs: ['IDD_MS', 'IDD_PHD'] },
+            { id: 'ISD 611', label: 'ISD 611\nMacro-Level Training Systems', group: 'ISD', programs: ['HPI', 'IDD_MS'] },
+            { id: 'ISD 612', label: 'ISD 612\nAlternate Instructional Models', group: 'ISD', programs: ['IDD_PHD'] },
+            { id: 'ISD 613', label: 'ISD 613\nInstructional & Learning Strategies', group: 'ISD', programs: ['IDD_CERT', 'IDD_MS', 'IDD_PHD'] },
+            { id: 'ISD 614', label: 'ISD 614\nHuman Cognition for IDD', group: 'ISD', programs: ['IDD_PHD'] },
+            { id: 'ISD 621', label: 'ISD 621\nInstructional Design', group: 'ISD', programs: ['HPI', 'IDD_CERT', 'IDD_MS', 'IDD_PHD'] },
+            { id: 'ISD 622', label: 'ISD 622\nAdv. Instructional Design', group: 'ISD', programs: ['IDD_CERT', 'IDD_PHD'] },
+            { id: 'ISD 623', label: 'ISD 623\nAdv. Research & Design IDD', group: 'ISD', programs: ['IDD_PHD'] },
+            { id: 'ISD 640', label: 'ISD 640\nNeeds Assessment', group: 'ISD', programs: ['HPI', 'IDD_PHD'] },
+            { id: 'ISD 641', label: 'ISD 641\nPerformance Systems Tech', group: 'ISD', programs: ['HPI', 'IDD_MS', 'IDD_PHD'] },
+            { id: 'ISD 642', label: 'ISD 642\nProject Coordination', group: 'ISD', programs: ['HPI', 'IDD_CERT'] },
+            { id: 'ISD 651', label: 'ISD 651\nLearning Theory & Tech', group: 'ISD', programs: ['IDD_PHD'] },
+            { id: 'ISD 653', label: 'ISD 653\nDeveloping Online Instruction', group: 'ISD', programs: ['IDD_CERT', 'IDD_MS', 'IDD_PHD'] },
+            { id: 'ISD 695', label: 'ISD 695\nDoctoral Internship', group: 'ISD', programs: ['IDD_PHD'] },
+            { id: 'ISD 799', label: 'ISD 799\nDissertation', group: 'ISD', programs: ['IDD_PHD'] },
+
+            // IDE & EPY
+            { id: 'EPY 502', label: 'EPY 502\nPsych Principles of Learning', group: 'EPY', programs: ['IDD_MS', 'IDD_PHD', 'EDM_MS', 'LIB_MED'] },
+            { id: 'EPY 521', label: 'EPY 521\nHuman Dev & Behavior', group: 'EPY', programs: ['COUNSELING'] },
+            { id: 'EPY 555', label: 'EPY 555\nTests, Measurement & Eval', group: 'EPY', programs: ['COUNSELING'] },
+            { id: 'EPY 602', label: 'EPY 602\nAdv Theories of Learning', group: 'EPY', programs: ['IDD_PHD'] },
+            { id: 'IDE 510', label: 'IDE 510\nEducational Research & Eval', group: 'IDE', programs: ['IDD_MS', 'IDD_PHD', 'LIB_MED', 'COUNSELING'] },
+            { id: 'IDE 620', label: 'IDE 620\nQuantitative Methods I', group: 'IDE', programs: ['IDD_PHD'] },
+            { id: 'IDE 621', label: 'IDE 621\nQuantitative Methods II', group: 'IDE', programs: ['IDD_PHD'] },
+            { id: 'IDE 630', label: 'IDE 630\nAdv Research Design', group: 'IDE', programs: ['IDD_PHD'] },
+            { id: 'IDE 631', label: 'IDE 631\nQualitative Research', group: 'IDE', programs: ['IDD_PHD'] },
+            { id: 'IDE 635', label: 'IDE 635\nAdv Measurement & Eval', group: 'IDE', programs: ['IDD_PHD'] },
+            { id: 'IDE 645', label: 'IDE 645\nAdv Human Perf HPI', group: 'IDE', programs: ['HPI'] },
+            { id: 'IDE 660', label: 'IDE 660\nProgram Research & Eval', group: 'IDE', programs: ['HPI', 'IDD_MS', 'IDD_PHD'] },
+
+            // EDM & SPE
+            { id: 'EDM 510', label: 'EDM 510\nMicrocomputing Systems', group: 'EDM', programs: ['EDM_MS', 'LIB_MED'] },
+            { id: 'EDM 520', label: 'EDM 520\nComputer Apps in Edu', group: 'EDM', programs: ['EDM_MS'] },
+            { id: 'EDM 580', label: 'EDM 580\nInformation Literacy', group: 'EDM', programs: ['EDM_MS', 'LIB_MED'] },
+            { id: 'EDM 581', label: 'EDM 581\nMedia Center Mgmt', group: 'EDM', programs: ['LIB_MED'] },
+            { id: 'EDM 583', label: 'EDM 583\nLibrary Media Programs', group: 'EDM', programs: ['LIB_MED'] },
+            { id: 'EDM 595', label: 'EDM 595\nInternship A/B/C', group: 'EDM', programs: ['LIB_MED'] },
+            { id: 'SPE 500', label: 'SPE 500\nExceptional Children/Youth', group: 'EDM', programs: ['LIB_MED', 'COUNSELING'] },
+
+            // CED (Counseling)
+            { id: 'CED 560', label: 'CED 560\nDiag & Treatment Planning', group: 'CED', programs: ['COUNSELING'] },
+            { id: 'CED 566', label: 'CED 566\nMulticultural Counseling', group: 'CED', programs: ['COUNSELING'] },
+            { id: 'CED 572', label: 'CED 572\nPrinciples/Theories Counsel', group: 'CED', programs: ['COUNSELING'] },
+            { id: 'CED 574', label: 'CED 574\nGroup Counseling', group: 'CED', programs: ['COUNSELING'] },
+            { id: 'CED 576', label: 'CED 576\nSupervised Practicum', group: 'CED', programs: ['COUNSELING'] },
+            { id: 'CED 584', label: 'CED 584\nEthical & Legal Issues', group: 'CED', programs: ['COUNSELING'] },
+            { id: 'CED 586', label: 'CED 586\nCounseling Process/Skills', group: 'CED', programs: ['COUNSELING'] },
+            { id: 'CED 588', label: 'CED 588\nCareer Dev & Assessment', group: 'CED', programs: ['COUNSELING'] },
+            { id: 'CED 595', label: 'CED 595\nInternship (School)', group: 'CED', programs: ['COUNSELING'] },
+            { id: 'CED 597', label: 'CED 597\nInternship (Clinical)', group: 'CED', programs: ['COUNSELING'] }
+        ];
+
+        // Prerequisites & Progression Relationships (Edges)
+        const rawEdges = [
+            // ISD Prerequisite Chains
+            { from: 'ISD 621', to: 'ISD 622', label: 'Prerequisite' },
+            { from: 'EPY 502', to: 'EPY 602', label: 'Prerequisite' },
+            { from: 'ISD 621', to: 'ISD 640', label: 'Foundation' },
+            { from: 'ISD 640', to: 'IDE 645', label: 'Advanced' },
+            { from: 'ISD 641', to: 'IDE 645', label: 'Advanced' },
+            { from: 'ISD 622', to: 'ISD 623', label: 'Advanced' },
+            { from: 'IDE 510', to: 'IDE 620', label: 'Sequence' },
+            { from: 'IDE 620', to: 'IDE 621', label: 'Sequence' },
+            { from: 'IDE 630', to: 'ISD 799', label: 'Prep for' },
+            { from: 'EDM 581', to: 'EDM 595', label: 'Prereq for Intern A' },
+            { from: 'EDM 580', to: 'EDM 595', label: 'Prereq for Intern B' },
+            { from: 'EDM 583', to: 'EDM 595', label: 'Prereq for Intern C' },
+            { from: 'CED 572', to: 'CED 576', label: 'Prerequisite' },
+            { from: 'CED 586', to: 'CED 576', label: 'Prerequisite' },
+            { from: 'CED 576', to: 'CED 595', label: 'Prerequisite' },
+            { from: 'CED 576', to: 'CED 597', label: 'Prerequisite' },
+            { from: 'ISD 621', to: 'ISD 611', label: 'Culminating' },
+            { from: 'IDE 660', to: 'ISD 611', label: 'Culminating' }
+        ];
+
+        // 2. Vis.js Group Styling Configuration
+        const nodesDataSet = new vis.DataSet();
+        const edgesDataSet = new vis.DataSet();
+
+        const container = document.getElementById('mynetwork');
+        const data = { nodes: nodesDataSet, edges: edgesDataSet };
+
+        const options = {
+            nodes: {
+                shape: 'dot',
+                size: 20,
+                font: { size: 14, color: '#ffffff', face: 'Segoe UI' },
+                borderWidth: 2,
+                shadow: true
+            },
+            edges: {
+                width: 2,
+                color: { color: '#4a5568', highlight: '#63b3ed' },
+                arrows: { to: { enabled: true, scaleFactor: 0.8 } },
+                smooth: { type: 'continuous' }
+            },
+            groups: {
+                ISD: { color: { background: '#3182ce', border: '#63b3ed' } },
+                IDE: { color: { background: '#dd6b20', border: '#fbd38d' } },
+                EPY: { color: { background: '#d69e2e', border: '#faf089' } },
+                EDM: { color: { background: '#38a169', border: '#9ae6b4' } },
+                CED: { color: { background: '#805ad5', border: '#d6bcfa' } }
+            },
+            physics: {
+                forceAtlas2Based: {
+                    gravitationalConstant: -35,
+                    centralGravity: 0.005,
+                    springLength: 100,
+                    springConstant: 0.18
+                },
+                maxVelocity: 146,
+                solver: 'forceAtlas2Based',
+                timestep: 0.35,
+                stabilization: { iterations: 150 }
+            },
+            interaction: { hover: true, tooltipDelay: 200 }
+        };
+
+        const network = new vis.Network(container, data, options);
+
+        // Populate initial data
+        function loadFullData() {
+            nodesDataSet.clear();
+            edgesDataSet.clear();
+            nodesDataSet.add(rawNodes);
+            edgesDataSet.add(rawEdges);
+        }
+
+        loadFullData();
+
+        // 3. Filtering Logic
+        function filterMap() {
+            const selectedProgram = document.getElementById('program-filter').value;
+            
+            if (selectedProgram === 'ALL') {
+                loadFullData();
+                return;
+            }
+
+            const filteredNodes = rawNodes.filter(n => n.programs.includes(selectedProgram));
+            const filteredNodeIds = new Set(filteredNodes.map(n => n.id));
+
+            const filteredEdges = rawEdges.filter(e => 
+                filteredNodeIds.has(e.from) && filteredNodeIds.has(e.to)
+            );
+
+            nodesDataSet.clear();
+            edgesDataSet.clear();
+            nodesDataSet.add(filteredNodes);
+            edgesDataSet.add(filteredEdges);
+        }
+
+        // 4. Search Functionality
+        function searchNode() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            if (!query) return;
+
+            const found = rawNodes.find(n => n.id.toLowerCase().includes(query) || n.label.toLowerCase().includes(query));
+            if (found) {
+                network.focus(found.id, { scale: 1.2, animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
+                network.selectNodes([found.id]);
+                showInfo(found.id);
+            }
+        }
+
+        // 5. Node Selection & Details Panel
+        network.on("click", function (params) {
+            if (params.nodes.length > 0) {
+                const nodeId = params.nodes[0];
+                showInfo(nodeId);
+            }
+        });
+
+        function showInfo(nodeId) {
+            const node = rawNodes.find(n => n.id === nodeId);
+            if (!node) return;
+
+            const infoPanel = document.getElementById('info-content');
+            infoPanel.innerHTML = `
+                <strong>과목 코드:</strong> ${node.id}<br>
+                <strong>과목명:</strong> ${node.label.replace('\n', ' - ')}<br>
+                <strong>계열:</strong> ${node.group}<br>
+                <strong>개설 프로그램:</strong> <br> - ${node.programs.join('<br> - ')}
+            `;
+        }
+    </script>
+</body>
+</html>
