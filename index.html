@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Coursework Knowledge Map - USA COEPS</title>
+    <title>USA COEPS - Interactive Coursework Knowledge Map</title>
     <!-- Vis.js Network CDN -->
     <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
     <style>
@@ -21,7 +21,7 @@
             overflow: hidden;
         }
         #sidebar {
-            width: 340px;
+            width: 350px;
             background-color: #1e293b;
             border-right: 1px solid #334155;
             padding: 20px;
@@ -32,7 +32,7 @@
             box-shadow: 4px 0 12px rgba(0,0,0,0.4);
         }
         h1 {
-            font-size: 1.25rem;
+            font-size: 1.2rem;
             color: #38bdf8;
             margin-bottom: 4px;
             font-weight: 700;
@@ -81,7 +81,7 @@
         .color-box {
             width: 14px;
             height: 14px;
-            border-radius: 4px;
+            border-radius: 50%;
             flex-shrink: 0;
         }
         #info-panel {
@@ -92,7 +92,7 @@
             border: 1px solid #334155;
             font-size: 0.85rem;
             line-height: 1.5;
-            min-height: 120px;
+            min-height: 130px;
         }
         #info-panel h3 {
             color: #4ade80;
@@ -111,126 +111,156 @@
 
     <div id="sidebar">
         <div>
-            <h1>Coursework Map</h1>
-            <p class="subtitle">USA - College of Education & Professional Studies</p>
+            <h1>USA COEPS Course Map</h1>
+            <p class="subtitle">Interactive Curriculum & Coursework Map</p>
         </div>
 
         <div class="filter-group">
-            <label for="program-filter">Filter by Academic Program</label>
+            <label for="program-filter">Filter by Program</label>
             <select id="program-filter" onchange="filterMap()">
                 <option value="ALL">Show All Programs</option>
-                <option value="IDD_PHD">Ph.D. in IDD</option>
-                <option value="IDD_MS">M.S. in IDD</option>
+                <option value="LIB_MED">Library Media P-12 (M.Ed / Cert)</option>
                 <option value="HPI_CERT">HPI Certificate</option>
                 <option value="IDD_CERT">IDD Certificate</option>
-                <option value="EDM_MS">M.S. in Educational Media</option>
-                <option value="LIB_MED">Library Media Certificate/M.Ed.</option>
-                <option value="COUNSELING">Counseling Programs</option>
+                <option value="IDD_MS">IDD M.S.</option>
+                <option value="IDD_PHD">IDD Ph.D.</option>
+                <option value="EDM_MS">Educational Media M.S.</option>
+                <option value="COUNSELING">Counseling Programs (CMHC & School)</option>
             </select>
         </div>
 
         <div class="filter-group">
             <label for="search-input">Search Course</label>
-            <input type="text" id="search-input" placeholder="e.g. ISD 621, Research..." oninput="searchNode()">
+            <input type="text" id="search-input" placeholder="e.g. EDM 581, ISD 621..." oninput="searchNode()">
         </div>
 
         <div class="legend">
-            <label>Category Groups</label>
-            <div class="legend-item"><div class="color-box" style="background:#f59e0b;"></div> Prerequisite Core</div>
-            <div class="legend-item"><div class="color-box" style="background:#0284c7;"></div> Instructional Core</div>
-            <div class="legend-item"><div class="color-box" style="background:#16a34a;"></div> Research & Evaluation</div>
-            <div class="legend-item"><div class="color-box" style="background:#9333ea;"></div> Supporting / Major Electives</div>
-            <div class="legend-item"><div class="color-box" style="background:#dc2626;"></div> Field, Internship & Capstone</div>
+            <label>Course Groups & Categories</label>
+            <div class="legend-item"><div class="color-box" style="background:#0284c7;"></div> Prerequisite Core</div>
+            <div class="legend-item"><div class="color-box" style="background:#22c55e;"></div> Instructional Core</div>
+            <div class="legend-item"><div class="color-box" style="background:#eab308;"></div> Research & Evaluation</div>
+            <div class="legend-item"><div class="color-box" style="background:#a855f7;"></div> Educational Media / Diversity</div>
+            <div class="legend-item"><div class="color-box" style="background:#ec4899;"></div> Counseling Core</div>
+            <div class="legend-item"><div class="color-box" style="background:#ef4444;"></div> Internships & Capstone</div>
         </div>
 
         <div id="info-panel">
             <h3>Course Details</h3>
-            <p id="info-content">Click on any course node to view its credits, category group, prerequisites, and associated degree programs.</p>
+            <p id="info-content">Click on any course circle to view full details, credit hours, category group, and prerequisite relationships.</p>
         </div>
     </div>
 
     <div id="mynetwork"></div>
 
     <script type="text/javascript">
-        // 1. Course Dataset with Credits and Category Groups
+        // Complete, Parsed Dataset from PDF Uploads
         const rawNodes = [
             // Prerequisite Core
-            { id: 'EPY 502', label: 'EPY 502\nPsych Principles\n(3 Cr)', group: 'PREREQ', credits: 3, name: 'Psychological Principles of Learning', programs: ['IDD_MS', 'IDD_PHD', 'EDM_MS', 'LIB_MED'] },
-            { id: 'IDE 510', label: 'IDE 510\nEdu Research\n(3 Cr)', group: 'PREREQ', credits: 3, name: 'Educational Research and Evaluation', programs: ['IDD_MS', 'IDD_PHD', 'LIB_MED', 'COUNSELING'] },
-            { id: 'ISD 610', label: 'ISD 610\nTrends & Issues IDD\n(3 Cr)', group: 'PREREQ', credits: 3, name: 'Trends and Issues in Instructional Design', programs: ['IDD_MS', 'IDD_PHD'] },
-            { id: 'ISD 613', label: 'ISD 613\nInst & Learning Strat\n(3 Cr)', group: 'PREREQ', credits: 3, name: 'Instructional and Learning Strategies', programs: ['IDD_CERT', 'IDD_MS', 'IDD_PHD'] },
-            { id: 'ISD 621', label: 'ISD 621\nInstructional Design\n(3 Cr)', group: 'PREREQ', credits: 3, name: 'Instructional Design', programs: ['HPI_CERT', 'IDD_CERT', 'IDD_MS', 'IDD_PHD'] },
-            { id: 'ISD 641', label: 'ISD 641\nPerf Systems Tech\n(3 Cr)', group: 'PREREQ', credits: 3, name: 'Performance Systems Technology', programs: ['HPI_CERT', 'IDD_MS', 'IDD_PHD'] },
+            { id: 'EPY 502', code: 'EPY 502', credits: 3, name: 'Psychological Principles of Learning', group: 'PREREQ', programs: ['IDD_MS', 'IDD_PHD', 'EDM_MS', 'LIB_MED'] },
+            { id: 'IDE 510', code: 'IDE 510', credits: 3, name: 'Educational Research and Evaluation', group: 'PREREQ', programs: ['IDD_MS', 'IDD_PHD', 'LIB_MED', 'COUNSELING'] },
+            { id: 'ISD 610', code: 'ISD 610', credits: 3, name: 'Trends and Issues in IDD', group: 'PREREQ', programs: ['IDD_MS', 'IDD_PHD'] },
+            { id: 'ISD 613', code: 'ISD 613', credits: 3, name: 'Instructional and Learning Strategies', group: 'PREREQ', programs: ['IDD_CERT', 'IDD_MS', 'IDD_PHD'] },
+            { id: 'ISD 621', code: 'ISD 621', credits: 3, name: 'Instructional Design', group: 'PREREQ', programs: ['HPI_CERT', 'IDD_CERT', 'IDD_MS', 'IDD_PHD'] },
+            { id: 'ISD 641', code: 'ISD 641', credits: 3, name: 'Performance Systems Technology', group: 'PREREQ', programs: ['HPI_CERT', 'IDD_MS', 'IDD_PHD'] },
 
             // Instructional Core
-            { id: 'EPY 602', label: 'EPY 602\nAdv Theories Learning\n(3 Cr)', group: 'INST_CORE', credits: 3, name: 'Advanced Theories of Learning', programs: ['IDD_PHD'] },
-            { id: 'ISD 612', label: 'ISD 612\nAlt Inst Models\n(3 Cr)', group: 'INST_CORE', credits: 3, name: 'Alternate Instructional Models', programs: ['IDD_PHD'] },
-            { id: 'ISD 614', label: 'ISD 614\nHuman Cognition IDD\n(3 Cr)', group: 'INST_CORE', credits: 3, name: 'Human Cognition for IDD', programs: ['IDD_PHD'] },
-            { id: 'ISD 622', label: 'ISD 622\nAdv Inst Design\n(3 Cr)', group: 'INST_CORE', credits: 3, name: 'Advanced Instructional Design', programs: ['IDD_CERT', 'IDD_PHD'] },
-            { id: 'ISD 640', label: 'ISD 640\nNeeds Assessment\n(3 Cr)', group: 'INST_CORE', credits: 3, name: 'Needs Assessment', programs: ['HPI_CERT', 'IDD_PHD'] },
-            { id: 'ISD 651', label: 'ISD 651\nLearning Theory Tech\n(3 Cr)', group: 'INST_CORE', credits: 3, name: 'Learning Theory and Technology', programs: ['IDD_PHD'] },
-            { id: 'ISD 653', label: 'ISD 653\nDev Online Inst\n(3 Cr)', group: 'INST_CORE', credits: 3, name: 'Developing Online Instruction', programs: ['IDD_CERT', 'IDD_MS', 'IDD_PHD'] },
+            { id: 'EPY 602', code: 'EPY 602', credits: 3, name: 'Advanced Theories of Learning', group: 'INST_CORE', programs: ['IDD_PHD'] },
+            { id: 'ISD 612', code: 'ISD 612', credits: 3, name: 'Alternate Instructional Models', group: 'INST_CORE', programs: ['IDD_PHD'] },
+            { id: 'ISD 614', code: 'ISD 614', credits: 3, name: 'Human Cognition for IDD', group: 'INST_CORE', programs: ['IDD_PHD'] },
+            { id: 'ISD 622', code: 'ISD 622', credits: 3, name: 'Advanced Instructional Design', group: 'INST_CORE', programs: ['IDD_CERT', 'IDD_PHD'] },
+            { id: 'ISD 640', code: 'ISD 640', credits: 3, name: 'Needs Assessment', group: 'INST_CORE', programs: ['HPI_CERT', 'IDD_PHD'] },
+            { id: 'ISD 651', code: 'ISD 651', credits: 3, name: 'Learning Theory and Technology', group: 'INST_CORE', programs: ['IDD_PHD'] },
+            { id: 'ISD 653', code: 'ISD 653', credits: 3, name: 'Developing Online Instruction', group: 'INST_CORE', programs: ['IDD_CERT', 'IDD_MS', 'IDD_PHD'] },
 
             // Research & Evaluation
-            { id: 'IDE 620', label: 'IDE 620\nQuant Methods I\n(3 Cr)', group: 'RESEARCH', credits: 3, name: 'Quantitative Methods I', programs: ['IDD_PHD'] },
-            { id: 'IDE 621', label: 'IDE 621\nQuant Methods II\n(3 Cr)', group: 'RESEARCH', credits: 3, name: 'Quantitative Methods II', programs: ['IDD_PHD'] },
-            { id: 'IDE 630', label: 'IDE 630\nAdv Research Design\n(3 Cr)', group: 'RESEARCH', credits: 3, name: 'Advanced Research Design', programs: ['IDD_PHD'] },
-            { id: 'IDE 631', label: 'IDE 631\nQualitative Research\n(3 Cr)', group: 'RESEARCH', credits: 3, name: 'Qualitative Research', programs: ['IDD_PHD'] },
-            { id: 'IDE 635', label: 'IDE 635\nAdv Measure & Eval\n(3 Cr)', group: 'RESEARCH', credits: 3, name: 'Advanced Measurement and Evaluation', programs: ['IDD_PHD'] },
-            { id: 'IDE 660', label: 'IDE 660\nProgram Evaluation\n(3 Cr)', group: 'RESEARCH', credits: 3, name: 'Program Research and Evaluation', programs: ['HPI_CERT', 'IDD_MS', 'IDD_PHD'] },
-            { id: 'ISD 623', label: 'ISD 623\nAdv Res & Design IDD\n(3 Cr)', group: 'RESEARCH', credits: 3, name: 'Advanced Research and Design for IDD', programs: ['IDD_PHD'] },
+            { id: 'IDE 620', code: 'IDE 620', credits: 3, name: 'Quantitative Methods I', group: 'RESEARCH', programs: ['IDD_PHD'] },
+            { id: 'IDE 621', code: 'IDE 621', credits: 3, name: 'Quantitative Methods II', group: 'RESEARCH', programs: ['IDD_PHD'] },
+            { id: 'IDE 630', code: 'IDE 630', credits: 3, name: 'Advanced Research Design', group: 'RESEARCH', programs: ['IDD_PHD'] },
+            { id: 'IDE 631', code: 'IDE 631', credits: 3, name: 'Qualitative Research', group: 'RESEARCH', programs: ['IDD_PHD'] },
+            { id: 'IDE 635', code: 'IDE 635', credits: 3, name: 'Advanced Measurement & Evaluation', group: 'RESEARCH', programs: ['IDD_PHD'] },
+            { id: 'IDE 660', code: 'IDE 660', credits: 3, name: 'Program Research and Evaluation', group: 'RESEARCH', programs: ['HPI_CERT', 'IDD_MS', 'IDD_PHD'] },
+            { id: 'ISD 623', code: 'ISD 623', credits: 3, name: 'Advanced Research and Design for IDD', group: 'RESEARCH', programs: ['IDD_PHD'] },
 
-            // Supporting & Electives
-            { id: 'ISD 581', label: 'ISD 581\nHypermedia Tools\n(3 Cr)', group: 'SUPPORTING', credits: 3, name: 'Hypermedia Tools', programs: ['IDD_MS', 'EDM_MS'] },
-            { id: 'ISD 642', label: 'ISD 642\nProject Coordination\n(3 Cr)', group: 'SUPPORTING', credits: 3, name: 'Project Coordination', programs: ['HPI_CERT', 'IDD_CERT'] },
-            { id: 'IDE 645', label: 'IDE 645\nAdv Human Perf HPI\n(3 Cr)', group: 'SUPPORTING', credits: 3, name: 'Advanced Human Performance Improvement', programs: ['HPI_CERT'] },
-            { id: 'EDM 510', label: 'EDM 510\nMicrocomputing Sys\n(3 Cr)', group: 'SUPPORTING', credits: 3, name: 'Microcomputing Systems in Education', programs: ['EDM_MS', 'LIB_MED'] },
-            { id: 'EDM 580', label: 'EDM 580\nInfo Literacy\n(3 Cr)', group: 'SUPPORTING', credits: 3, name: 'Information Literacy', programs: ['EDM_MS', 'LIB_MED'] },
-            { id: 'EDM 581', label: 'EDM 581\nMedia Center Mgmt\n(3 Cr)', group: 'SUPPORTING', credits: 3, name: 'Media Center Management', programs: ['LIB_MED'] },
-            { id: 'EDM 583', label: 'EDM 583\nLibrary Media Prog\n(3 Cr)', group: 'SUPPORTING', credits: 3, name: 'Library Media Programs', programs: ['LIB_MED'] },
-            { id: 'CED 560', label: 'CED 560\nDiag & Treatment\n(3 Cr)', group: 'SUPPORTING', credits: 3, name: 'Diagnostic and Treatment Planning', programs: ['COUNSELING'] },
-            { id: 'CED 572', label: 'CED 572\nPrinciples Counsel\n(3 Cr)', group: 'SUPPORTING', credits: 3, name: 'Principles and Theories of Counseling', programs: ['COUNSELING'] },
-            { id: 'CED 586', label: 'CED 586\nCounseling Process\n(3 Cr)', group: 'SUPPORTING', credits: 3, name: 'Analysis of Counseling Process', programs: ['COUNSELING'] },
+            // Educational Media, Library Media & Diversity Core
+            { id: 'EDU 567', code: 'EDU 567', credits: 3, name: 'Multicultural Experiences in Schools', group: 'EDM_DIV', programs: ['LIB_MED'] },
+            { id: 'EDF 515', code: 'EDF 515', credits: 3, name: 'Multicultural Education', group: 'EDM_DIV', programs: ['LIB_MED'] },
+            { id: 'EDM 510', code: 'EDM 510', credits: 3, name: 'Microcomputing Systems in Education', group: 'EDM_DIV', programs: ['EDM_MS', 'LIB_MED'] },
+            { id: 'EDM 520', code: 'EDM 520', credits: 3, name: 'Computer Applications in Education', group: 'EDM_DIV', programs: ['EDM_MS'] },
+            { id: 'EDM 530', code: 'EDM 530', credits: 3, name: 'Workshop for Ed Media', group: 'EDM_DIV', programs: ['LIB_MED'] },
+            { id: 'EDM 540', code: 'EDM 540', credits: 3, name: 'Curriculum Media for Children and Youth', group: 'EDM_DIV', programs: ['LIB_MED'] },
+            { id: 'EDM 580', code: 'EDM 580', credits: 3, name: 'Information Literacy', group: 'EDM_DIV', programs: ['EDM_MS', 'LIB_MED'] },
+            { id: 'EDM 581', code: 'EDM 581', credits: 3, name: 'Media Center Management', group: 'EDM_DIV', programs: ['LIB_MED'] },
+            { id: 'EDM 583', code: 'EDM 583', credits: 3, name: 'Library Media Programs', group: 'EDM_DIV', programs: ['LIB_MED'] },
+            { id: 'SPE 500', code: 'SPE 500', credits: 3, name: 'Nature and Needs of Exceptional Children', group: 'EDM_DIV', programs: ['LIB_MED', 'COUNSELING'] },
 
-            // Field, Internship & Dissertation
-            { id: 'ISD 611', label: 'ISD 611\nMacro Training Sys\n(3 Cr)', group: 'FIELD', credits: 3, name: 'Macro-level Training and Performance Systems', programs: ['HPI_CERT', 'IDD_MS'] },
-            { id: 'ISD 695', label: 'ISD 695\nDoctoral Internship\n(3 Cr)', group: 'FIELD', credits: 3, name: 'Doctoral Internship', programs: ['IDD_PHD'] },
-            { id: 'ISD 799', label: 'ISD 799\nDissertation\n(9 Cr)', group: 'FIELD', credits: 9, name: 'Research / Dissertation', programs: ['IDD_PHD'] },
-            { id: 'EDM 595', label: 'EDM 595\nInternship A/B/C\n(3 Cr)', group: 'FIELD', credits: 3, name: 'Library Media Internship', programs: ['LIB_MED'] },
-            { id: 'CED 576', label: 'CED 576\nSupervised Practicum\n(3 Cr)', group: 'FIELD', credits: 3, name: 'Supervised Practicum in Counseling', programs: ['COUNSELING'] },
-            { id: 'CED 595', label: 'CED 595\nSchool Internship\n(6 Cr)', group: 'FIELD', credits: 6, name: 'Internship in School Counseling', programs: ['COUNSELING'] },
-            { id: 'CED 597', label: 'CED 597\nClinical Internship\n(6 Cr)', group: 'FIELD', credits: 6, name: 'Internship in Clinical Counseling', programs: ['COUNSELING'] }
+            // Counseling Core
+            { id: 'CED 560', code: 'CED 560', credits: 3, name: 'Diagnostic and Treatment Planning', group: 'COUNSELING', programs: ['COUNSELING'] },
+            { id: 'CED 565', code: 'CED 565', credits: 3, name: 'Foundations of Professional School Counseling', group: 'COUNSELING', programs: ['COUNSELING'] },
+            { id: 'CED 566', code: 'CED 566', credits: 3, name: 'Multicultural Counseling', group: 'COUNSELING', programs: ['COUNSELING'] },
+            { id: 'CED 572', code: 'CED 572', credits: 3, name: 'Principles and Theories of Counseling', group: 'COUNSELING', programs: ['COUNSELING'] },
+            { id: 'CED 574', code: 'CED 574', credits: 3, name: 'Group Counseling Theory & Process', group: 'COUNSELING', programs: ['COUNSELING'] },
+            { id: 'CED 584', code: 'CED 584', credits: 3, name: 'Seminar in Ethical and Legal Issues', group: 'COUNSELING', programs: ['COUNSELING'] },
+            { id: 'CED 586', code: 'CED 586', credits: 3, name: 'Counseling Skills and Processes', group: 'COUNSELING', programs: ['COUNSELING'] },
+
+            // Internships, Field Work & Dissertation
+            { id: 'ISD 581', code: 'ISD 581', credits: 3, name: 'Hypermedia Tools', group: 'INST_CORE', programs: ['IDD_MS', 'EDM_MS'] },
+            { id: 'ISD 611', code: 'ISD 611', credits: 3, name: 'Macro-level Training & Perf Systems (Capstone)', group: 'FIELD', programs: ['HPI_CERT', 'IDD_MS'] },
+            { id: 'ISD 642', code: 'ISD 642', credits: 3, name: 'Project Coordination', group: 'FIELD', programs: ['HPI_CERT', 'IDD_CERT'] },
+            { id: 'IDE 645', code: 'IDE 645', credits: 3, name: 'Adv Human Performance Improvement', group: 'FIELD', programs: ['HPI_CERT'] },
+            { id: 'EDM 595A', code: 'EDM 595A', credits: 1, name: 'Library Media Internship A (School Setting)', group: 'FIELD', programs: ['LIB_MED'] },
+            { id: 'EDM 595B', code: 'EDM 595B', credits: 1, name: 'Library Media Internship B', group: 'FIELD', programs: ['LIB_MED'] },
+            { id: 'EDM 595C', code: 'EDM 595C', credits: 1, name: 'Library Media Internship C', group: 'FIELD', programs: ['LIB_MED'] },
+            { id: 'CED 576', code: 'CED 576', credits: 3, name: 'Supervised Practicum in Counseling', group: 'FIELD', programs: ['COUNSELING'] },
+            { id: 'CED 595', code: 'CED 595', credits: 6, name: 'Internship in School Counseling', group: 'FIELD', programs: ['COUNSELING'] },
+            { id: 'CED 597', code: 'CED 597', credits: 6, name: 'Internship in Clinical Mental Health', group: 'FIELD', programs: ['COUNSELING'] },
+            { id: 'ISD 695', code: 'ISD 695', credits: 3, name: 'Doctoral Internship', group: 'FIELD', programs: ['IDD_PHD'] },
+            { id: 'ISD 799', code: 'ISD 799', credits: 9, name: 'Research / Dissertation', group: 'FIELD', programs: ['IDD_PHD'] }
         ];
 
-        // 2. Connections and Prerequisites (Arrows)
+        // Format nodes so ONLY code & credits are inside, and full name is outside
+        const formattedNodes = rawNodes.map(node => ({
+            id: node.id,
+            label: `<b>${node.code}</b>\n(${node.credits})`, // Text inside circle
+            title: node.name,
+            group: node.group,
+            programs: node.programs,
+            credits: node.credits,
+            fullName: node.name
+        }));
+
+        // Explicit Connections & Prerequisites (Arrows)
         const rawEdges = [
-            // Explicit Prerequisites & Progression Sequences
-            { from: 'EPY 502', to: 'EPY 602', label: 'Prerequisite', arrows: 'to' },
-            { from: 'ISD 621', to: 'ISD 622', label: 'Prerequisite', arrows: 'to' },
-            { from: 'IDE 510', to: 'IDE 620', label: 'Prerequisite Sequence', arrows: 'to' },
-            { from: 'IDE 620', to: 'IDE 621', label: 'Prerequisite Sequence', arrows: 'to' },
-            { from: 'ISD 622', to: 'ISD 623', label: 'Prerequisite', arrows: 'to' },
-            { from: 'ISD 621', to: 'ISD 640', label: 'Foundation', arrows: 'to' },
-            { from: 'ISD 640', to: 'IDE 645', label: 'Prerequisite', arrows: 'to' },
-            { from: 'ISD 641', to: 'IDE 645', label: 'Foundation', arrows: 'to' },
-            { from: 'EDM 581', to: 'EDM 595', label: 'Prerequisite (Intern A)', arrows: 'to' },
-            { from: 'EDM 580', to: 'EDM 595', label: 'Prerequisite (Intern B)', arrows: 'to' },
-            { from: 'EDM 583', to: 'EDM 595', label: 'Prerequisite (Intern C)', arrows: 'to' },
-            { from: 'CED 572', to: 'CED 576', label: 'Prerequisite', arrows: 'to' },
-            { from: 'CED 586', to: 'CED 576', label: 'Prerequisite', arrows: 'to' },
-            { from: 'CED 576', to: 'CED 595', label: 'Prerequisite', arrows: 'to' },
-            { from: 'CED 576', to: 'CED 597', label: 'Prerequisite', arrows: 'to' },
+            // ISD & EPY Prerequisites
+            { from: 'EPY 502', to: 'EPY 602', label: 'Prereq' },
+            { from: 'ISD 621', to: 'ISD 622', label: 'Prereq' },
+            { from: 'ISD 622', to: 'ISD 623', label: 'Prereq' },
+            { from: 'IDE 510', to: 'IDE 620', label: 'Sequence' },
+            { from: 'IDE 620', to: 'IDE 621', label: 'Sequence' },
+            { from: 'ISD 621', to: 'ISD 640', label: 'Foundation' },
+            { from: 'ISD 640', to: 'IDE 645', label: 'Prereq' },
+            { from: 'ISD 641', to: 'IDE 645', label: 'Prereq' },
+            { from: 'ISD 621', to: 'ISD 611', label: 'Capstone Prep' },
+            { from: 'IDE 660', to: 'ISD 611', label: 'Capstone Prep' },
 
-            // Capstone & Final Milestone Progression
-            { from: 'ISD 621', to: 'ISD 611', label: 'Leads to Capstone', arrows: 'to' },
-            { from: 'IDE 660', to: 'ISD 611', label: 'Leads to Capstone', arrows: 'to' },
-            { from: 'IDE 630', to: 'ISD 799', label: 'Pre-Dissertation Exam', arrows: 'to' },
-            { from: 'ISD 695', to: 'ISD 799', label: 'Pre-Dissertation', arrows: 'to' }
+            // Library Media EDM Prerequisites
+            { from: 'EDM 581', to: 'EDM 595A', label: 'Prereq for Intern A' },
+            { from: 'EDM 580', to: 'EDM 595B', label: 'Prereq for Intern B' },
+            { from: 'EDM 583', to: 'EDM 595C', label: 'Prereq for Intern C' },
+
+            // Counseling Prerequisites
+            { from: 'CED 572', to: 'CED 576', label: 'Prereq' },
+            { from: 'CED 586', to: 'CED 576', label: 'Prereq' },
+            { from: 'CED 576', to: 'CED 595', label: 'Prereq' },
+            { from: 'CED 576', to: 'CED 597', label: 'Prereq' },
+
+            // Ph.D. Milestones
+            { from: 'IDE 630', to: 'ISD 799', label: 'Exam Req' },
+            { from: 'ISD 695', to: 'ISD 799', label: 'Dissertation Prep' }
         ];
 
-        // 3. Network Configuration
-        const nodesDataSet = new vis.DataSet();
-        const edgesDataSet = new vis.DataSet();
+        // Initialize Vis.js DataSets
+        const nodesDataSet = new vis.DataSet(formattedNodes);
+        const edgesDataSet = new vis.DataSet(rawEdges.map(e => ({ ...e, arrows: 'to' })));
 
         const container = document.getElementById('mynetwork');
         const data = { nodes: nodesDataSet, edges: edgesDataSet };
@@ -238,29 +268,35 @@
         const options = {
             nodes: {
                 shape: 'circle',
-                size: 26,
-                font: { size: 11, color: '#ffffff', face: 'Segoe UI', multi: true },
+                size: 28, // Standard uniform circle size
+                font: { 
+                    size: 11, 
+                    color: '#ffffff', 
+                    face: 'Segoe UI', 
+                    multi: 'html' 
+                },
                 borderWidth: 2,
                 shadow: true
             },
             edges: {
                 width: 2,
                 color: { color: '#475569', highlight: '#38bdf8' },
-                font: { size: 9, fill: '#0f172a', color: '#94a3b8', align: 'middle' },
+                font: { size: 9, color: '#94a3b8', strokeWidth: 0 },
                 smooth: { type: 'cubicBezier', roundness: 0.2 }
             },
             groups: {
-                PREREQ: { color: { background: '#d97706', border: '#f59e0b' } },
-                INST_CORE: { color: { background: '#0284c7', border: '#38bdf8' } },
-                RESEARCH: { color: { background: '#16a34a', border: '#4ade80' } },
-                SUPPORTING: { color: { background: '#9333ea', border: '#c084fc' } },
-                FIELD: { color: { background: '#dc2626', border: '#f87171' } }
+                PREREQ: { color: { background: '#0284c7', border: '#38bdf8' } },
+                INST_CORE: { color: { background: '#15803d', border: '#22c55e' } },
+                RESEARCH: { color: { background: '#ca8a04', border: '#eab308' } },
+                EDM_DIV: { color: { background: '#9333ea', border: '#c084fc' } },
+                COUNSELING: { color: { background: '#db2777', border: '#f472b6' } },
+                FIELD: { color: { background: '#b91c1c', border: '#ef4444' } }
             },
             physics: {
                 forceAtlas2Based: {
-                    gravitationalConstant: -40,
+                    gravitationalConstant: -45,
                     centralGravity: 0.008,
-                    springLength: 120,
+                    springLength: 130,
                     springConstant: 0.12
                 },
                 maxVelocity: 120,
@@ -273,30 +309,44 @@
 
         const network = new vis.Network(container, data, options);
 
-        function loadFullData() {
-            nodesDataSet.clear();
-            edgesDataSet.clear();
-            nodesDataSet.add(rawNodes);
-            edgesDataSet.add(rawEdges);
-        }
+        // Custom Canvas Rendering to draw course titles OUTSIDE the circles
+        network.on("afterDrawing", function (ctx) {
+            const nodeIds = nodesDataSet.getIds();
+            ctx.font = "11px 'Segoe UI', sans-serif";
+            ctx.fillStyle = "#cbd5e1";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "top";
 
-        loadFullData();
+            nodeIds.forEach(id => {
+                const node = nodesDataSet.get(id);
+                const pos = network.getPositions([id])[id];
+                if (pos && node) {
+                    // Truncate title if too long for clean diagram presentation
+                    let title = node.fullName;
+                    if (title.length > 25) title = title.substring(0, 23) + '...';
+                    ctx.fillText(title, pos.x, pos.y + 32);
+                }
+            });
+        });
 
-        // 4. Filtering Function
+        // Filter Logic
         function filterMap() {
             const selectedProgram = document.getElementById('program-filter').value;
             
             if (selectedProgram === 'ALL') {
-                loadFullData();
+                nodesDataSet.clear();
+                edgesDataSet.clear();
+                nodesDataSet.add(formattedNodes);
+                edgesDataSet.add(rawEdges.map(e => ({ ...e, arrows: 'to' })));
                 return;
             }
 
-            const filteredNodes = rawNodes.filter(n => n.programs.includes(selectedProgram));
+            const filteredNodes = formattedNodes.filter(n => n.programs.includes(selectedProgram));
             const filteredNodeIds = new Set(filteredNodes.map(n => n.id));
 
             const filteredEdges = rawEdges.filter(e => 
                 filteredNodeIds.has(e.from) && filteredNodeIds.has(e.to)
-            );
+            ).map(e => ({ ...e, arrows: 'to' }));
 
             nodesDataSet.clear();
             edgesDataSet.clear();
@@ -304,12 +354,12 @@
             edgesDataSet.add(filteredEdges);
         }
 
-        // 5. Search Functionality
+        // Search Node Logic
         function searchNode() {
             const query = document.getElementById('search-input').value.toLowerCase();
             if (!query) return;
 
-            const found = rawNodes.find(n => n.id.toLowerCase().includes(query) || n.name.toLowerCase().includes(query));
+            const found = formattedNodes.find(n => n.id.toLowerCase().includes(query) || n.fullName.toLowerCase().includes(query));
             if (found) {
                 network.focus(found.id, { scale: 1.2, animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
                 network.selectNodes([found.id]);
@@ -317,7 +367,7 @@
             }
         }
 
-        // 6. Node Selection Event
+        // Details Display Logic
         network.on("click", function (params) {
             if (params.nodes.length > 0) {
                 const nodeId = params.nodes[0];
@@ -326,24 +376,25 @@
         });
 
         function showInfo(nodeId) {
-            const node = rawNodes.find(n => n.id === nodeId);
+            const node = formattedNodes.find(n => n.id === nodeId);
             if (!node) return;
 
             const categoryNames = {
                 PREREQ: 'Prerequisite Core',
                 INST_CORE: 'Instructional Core',
                 RESEARCH: 'Research & Evaluation',
-                SUPPORTING: 'Supporting Coursework / Elective',
-                FIELD: 'Field Experience / Internship / Dissertation'
+                EDM_DIV: 'Educational Media / Library / Diversity',
+                COUNSELING: 'Counseling Major Core',
+                FIELD: 'Internship, Field Experience & Capstone'
             };
 
             const infoPanel = document.getElementById('info-content');
             infoPanel.innerHTML = `
-                <strong>Course Code:</strong> ${node.id}<br>
-                <strong>Title:</strong> ${node.name}<br>
-                <strong>Credits:</strong> ${node.credits} Credit Hours<br>
+                <strong>Course Code:</strong> ${node.code}<br>
+                <strong>Full Name:</strong> ${node.fullName}<br>
+                <strong>Credit Hours:</strong> ${node.credits}<br>
                 <strong>Category Group:</strong> ${categoryNames[node.group]}<br>
-                <strong>Associated Programs:</strong><br>• ${node.programs.join('<br>• ')}
+                <strong>Programs:</strong><br>• ${node.programs.join('<br>• ')}
             `;
         }
     </script>
