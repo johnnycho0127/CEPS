@@ -233,8 +233,8 @@
             },
             { 
                 id: 'SPE 500', code: 'SPE 500', credits: 3, name: 'Nature and Needs of Exceptional Children', 
-                cat: { ALL: 'EDM_DIV', LIB_MED: 'DIV_SUPP', SCHOOL_COUNSEL: 'COUNS_CORE' }, 
-                programs: ['LIB_MED', 'SCHOOL_COUNSEL'] 
+                cat: { ALL: 'EDM_DIV', SCHOOL_COUNSEL: 'COUNS_CORE' }, 
+                programs: ['SCHOOL_COUNSEL'] 
             },
 
             // --- RESEARCH & EVALUATION (IDE) ---
@@ -313,6 +313,10 @@
             },
 
             // --- ELECTIVES & FIELD WORK ---
+            { 
+                id: 'LIB ELEC', code: 'ELEC 500+', credits: 3, name: 'Advisor Approved Elective (500-599)', 
+                cat: { ALL: 'FIELD', LIB_MED: 'ELECTIVE' }, programs: ['LIB_MED'] 
+            },
             { 
                 id: 'EDM ELEC 1', code: 'ELEC 1', credits: 3, name: 'Advisor Approved Elective (CIS, ISC, ISD, EDM)', 
                 cat: { ALL: 'FIELD', EDM_MS: 'ELECTIVE' }, programs: ['EDM_MS'] 
@@ -395,6 +399,7 @@
                     DIV_SUPP: { name: 'Diversity and Support Courses', color: COLORS.blue },
                     EDM_CORE: { name: 'Educational Media Core', color: COLORS.orange },
                     RES_EVAL: { name: 'Research and Evaluation', color: COLORS.green },
+                    ELECTIVE: { name: 'Advisor Approved Elective (500-599)', color: COLORS.teal },
                     INTERN: { name: 'Library Media Internships (A/B/C)', color: COLORS.red }
                 }
             },
@@ -467,9 +472,6 @@
             { from: 'ISD 641', to: 'IDE 645', label: 'Prereq' },
             { from: 'ISD 621', to: 'ISD 611', label: 'Capstone Prep' },
             { from: 'IDE 660', to: 'ISD 611', label: 'Capstone Prep' },
-            { from: 'EDM 581', to: 'EDM 595A', label: 'Prereq for Intern A' },
-            { from: 'EDM 580', to: 'EDM 595B', label: 'Prereq for Intern B' },
-            { from: 'EDM 583', to: 'EDM 595C', label: 'Prereq for Intern C' },
             { from: 'CED 572', to: 'CED 576', label: 'Prereq' },
             { from: 'CED 586', to: 'CED 576', label: 'Prereq' },
             { from: 'CED 576', to: 'CED 595', label: 'Prereq' },
